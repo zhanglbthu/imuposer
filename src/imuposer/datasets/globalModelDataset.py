@@ -22,6 +22,16 @@ class GlobalModelDataset(Dataset):
         pose = []
 
         for fname in data_files:
+            '''
+            fdata:
+                len(fdata["acc"]): 19(subjects)
+                joint[i]: [N, 24, 3]
+                pose[i]: [N, 24, 3, 3]
+                shape[i]: [10]
+                tran[i]: [N, 3]
+                acc[i]: [N, 6, 3]
+                ori[i]: [N, 6, 3, 3]
+            '''
             fdata = torch.load(self.config.processed_imu_poser_25fps / fname)
 
             for i in range(len(fdata["acc"])):
@@ -33,8 +43,8 @@ class GlobalModelDataset(Dataset):
                 glb_acc = facc.view(-1, 6, 3)[:, [0, 1, 2, 3, 4]] / self.config.acc_scale
                 glb_ori = fori.view(-1, 6, 3, 3)[:, [0, 1, 2, 3, 4]]
 
-                acc = glb_acc
-                ori = glb_ori
+                acc = glb_acc # [N, 5, 3]
+                ori = glb_ori # [N, 5, 3, 3]
 
                 # outputs
                 fpose = fdata["pose"][i]
@@ -43,7 +53,7 @@ class GlobalModelDataset(Dataset):
                 # clip the data
                 # 25 is the data sampling rate
 
-                window_length = self.config.max_sample_len * 25 // 60
+                window_length = self.config.max_sample_len * 25 // 60 # 300 * 25 // 60 = 125
 
                 for _combo in list(amass_combos):
                     # acc N, 5, 3
@@ -55,7 +65,7 @@ class GlobalModelDataset(Dataset):
                     _combo_acc[:, amass_combos[_combo]] = acc[:, amass_combos[_combo]]
                     _combo_ori[:, amass_combos[_combo]] = ori[:, amass_combos[_combo]]
 
-                    imu_inputs = torch.cat([_combo_acc.flatten(1), _combo_ori.flatten(1)], dim=1)
+                    imu_inputs = torch.cat([_combo_acc.flatten(1), _combo_ori.flatten(1)], dim=1) # [N, 5 * 3 + 5 * 3 * 3]
 
                     imu.extend(torch.split(imu_inputs, window_length))
                     pose.extend(torch.split(fpose, window_length))

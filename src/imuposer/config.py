@@ -7,7 +7,8 @@ class Config:
                  joints_set=None, loss_type=None, mkdir=True, normalize=False,
                  r6d=False, device=None, use_joint_loss=False, use_glb_rot_loss=False,
                  use_acc_recon_loss=False, pred_joints_set=None, pred_last_frame=False,
-                 use_vposer_loss=False, use_vel_loss=False):
+                 use_vposer_loss=False, use_vel_loss=False,
+                 checkpoint_path=None, test_only=False):
         self.experiment = experiment
         self.model = model
         self.root_dir = Path(project_root_dir).absolute()
@@ -23,6 +24,11 @@ class Config:
         self.pred_last_frame = pred_last_frame
         self.use_vposer_loss = use_vposer_loss
         self.use_vel_loss = use_vel_loss
+        
+        # set test options
+        self.test_only = test_only
+        self.checkpoint_path = checkpoint_path
+        print(f"checkpoint_path: {self.checkpoint_path}")
 
         if device != None:
             if 'cpu' in device:
@@ -102,7 +108,7 @@ amass_combos = {
     'lw_rw_h': [0, 1, 4],
     'rw_lp_rp': [1, 2, 3],
     'lw_rw_rp': [0, 1, 3],
-    'lw_rp_h': [0, 3, 4],
+    'lw_rp_h': [0, 3, 4], # left wrist, right pocket, head
     'rw_rp_h': [1, 3, 4],
     'lw_lp_rp': [0, 2, 3],
     'lw_rw_lp': [0, 1, 2],
