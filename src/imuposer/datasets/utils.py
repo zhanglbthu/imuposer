@@ -25,6 +25,7 @@ def get_dataset(config=None, test_only=False):
             train_dataset = GlobalModelDataset("train", config)
         test_dataset = GlobalModelDataset("test", config)
     elif model == "GlobalModelIMUPoserFineTuneDIP":
+        print("Fine tuning with DIP")
         if not test_only:
             train_dataset = GlobalModelDatasetFineTuneDIP("train", config)
         test_dataset = GlobalModelDatasetFineTuneDIP("test", config)

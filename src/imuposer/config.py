@@ -8,10 +8,13 @@ class Config:
                  r6d=False, device=None, use_joint_loss=False, use_glb_rot_loss=False,
                  use_acc_recon_loss=False, pred_joints_set=None, pred_last_frame=False,
                  use_vposer_loss=False, use_vel_loss=False,
-                 checkpoint_path=None, test_only=False):
+                 checkpoint_path=None, test_only=False, data_dir=None):
         self.experiment = experiment
         self.model = model
+        
         self.root_dir = Path(project_root_dir).absolute()
+        self.data_dir = Path(data_dir)
+        
         self.joints_set = joints_set # global: [0, 1, 2, 3, 4]
         self.pred_joints_set = [*range(24)] if pred_joints_set == None else pred_joints_set
 
@@ -46,18 +49,18 @@ class Config:
         self.smpl_model_path = self.root_dir / "src/imuposer/smpl/model.pkl"
         self.og_smpl_model_path = self.root_dir / "src/imuposer/smpl/basicmodel_m_lbs_10_207_0_v1.0.0.pkl"
         
-        self.raw_dip_path = self.root_dir / "data/raw/DIP_IMU"
-        self.raw_amass_path = self.root_dir / "data/raw/AMASS"
+        self.raw_dip_path = self.data_dir / "data/raw/DIP_IMU"
+        self.raw_amass_path = self.data_dir / "data/raw/AMASS"
 
-        self.processed_imu_poser = self.root_dir / "data/processed_imuposer"
-        self.processed_imu_poser_25fps = self.root_dir / "data/processed_imuposer_25fps"
+        self.processed_imu_poser = self.data_dir / "data/processed_imuposer"
+        self.processed_imu_poser_25fps = self.data_dir / "data/processed_imuposer_25fps"
 
         self.vposer_ckpt_path = self.root_dir / "extern/vposer_v2_05"
 
         if self.mkdir:
             if self.experiment != None:
                 datestring = datetime.datetime.now().strftime("%m%d%Y-%H%M%S")
-                self.checkpoint_path = self.root_dir / f"checkpoints/{self.experiment}-{datestring}"
+                self.checkpoint_path = self.data_dir / f"checkpoints/{self.experiment}-{datestring}"
                 self.checkpoint_path.mkdir(exist_ok=True, parents=True)
             else:
                 print("No experiment name give, can't create dir")

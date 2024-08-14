@@ -13,6 +13,8 @@ from imuposer.config import Config, amass_combos
 from imuposer.models.utils import get_model
 from imuposer.datasets.utils import get_datamodule
 from imuposer.utils import get_parser
+from pathlib import Path
+import os
 
 # set the random seed
 seed_everything(42, workers=True)
@@ -25,14 +27,24 @@ fast_dev_run = args.fast_dev_run
 _experiment = args.experiment
 
 # %%
-config = Config(experiment=f"{_experiment}_{combo_id}", model="GlobalModelIMUPoser",
+config = Config(experiment=f"{_experiment}_{combo_id}", model="GlobalModelIMUPoserFineTuneDIP",
                 project_root_dir="../../", joints_set=amass_combos[combo_id], normalize="no_translation",
                 r6d=True, loss_type="mse", use_joint_loss=True, device="0", 
-                data_dir="/root/autodl-tmp/imuposer")
+                checkpoint_path="/root/autodl-tmp/imuposer/checkpoints/IMUPoserGlobalModel_global-08102024-040836",
+                mkdir=False,
+                data_dir="/root/autodl-tmp/imuposer") 
+
+with open(os.path.join(config.checkpoint_path, "best_model.txt"), "r") as f:
+    # Read the first line for the best model path
+    best_model_path = f.readline().strip()
+
+# load the pretrained model using pytorch lightning
+pretrained_model = get_model(config, fine_tune=True)
+pretrained_model = pretrained_model.load_from_checkpoint(best_model_path, config=config)
 
 # %%
 # instantiate model and data
-model = get_model(config)
+model = get_model(config, pretrained_model)
 datamodule = get_datamodule(config)
 checkpoint_path = config.checkpoint_path 
 
@@ -52,5 +64,8 @@ trainer = pl.Trainer(fast_dev_run=fast_dev_run, logger=wandb_logger, max_epochs=
 trainer.fit(model, datamodule=datamodule)
 
 # %%
+# 判断checkpoint path是否为Path对象
+if not isinstance(checkpoint_path, Path):
+    checkpoint_path = Path(checkpoint_path)
 with open(checkpoint_path / "best_model.txt", "w") as f:
     f.write(f"{checkpoint_callback.best_model_path}\n\n{checkpoint_callback.best_k_models}")
