@@ -67,5 +67,5 @@ trainer.fit(model, datamodule=datamodule)
 # 判断checkpoint path是否为Path对象
 if not isinstance(checkpoint_path, Path):
     checkpoint_path = Path(checkpoint_path)
-with open(checkpoint_path / "best_model.txt", "w") as f:
+with open(checkpoint_path / "best_model_finetuned.txt", "w") as f:
     f.write(f"{checkpoint_callback.best_model_path}\n\n{checkpoint_callback.best_k_models}")

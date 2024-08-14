@@ -1,4 +1,5 @@
 # %%
+import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning import seed_everything
@@ -8,6 +9,7 @@ from imuposer.models.utils import get_model
 from imuposer.datasets.utils import get_datamodule
 from imuposer.utils import get_parser
 import os
+import sys
 
 # set the random seed
 seed_everything(42, workers=True)
@@ -25,17 +27,36 @@ config = Config(experiment=f"{_experiment}_{combo_id}", model="GlobalModelIMUPos
                 mkdir=False, checkpoint_path="/root/autodl-tmp/imuposer/checkpoints/IMUPoserGlobalModel_global-08102024-040836",
                 test_only=True, data_dir="/root/autodl-tmp/imuposer")
 
+# modify batch size
+config.batch_size = 2
+
 # %%
 # Read the best model path from the text file
 with open(os.path.join(config.checkpoint_path, "best_model.txt"), "r") as f:
-    # Read the first line for the best model path
     best_model_path = f.readline().strip()
+    
+with open(os.path.join(config.checkpoint_path, "best_model_finetuned.txt"), "r") as f:
+    best_model_finetuned_path = f.readline().strip()
+
+ckpt = torch.load(best_model_finetuned_path)
+state_dict = ckpt['state_dict']
+keys_to_modify = [key for key in state_dict.keys() if key.startswith('pretrained_model.')]
+if len(keys_to_modify) > 0:
+    for key in keys_to_modify:
+        new_key = key.replace("pretrained_model.", "")
+        state_dict[new_key] = state_dict.pop(key)
+        
+    torch.save(ckpt, best_model_finetuned_path)
+else:
+    print("No keys to modify in the state_dict.")
 
 # %%
 # instantiate model and data
-model_init = get_model(config, fine_tune=True)
-model = get_model(config, pretrained=model_init)
-model = model.load_from_checkpoint(best_model_path, config=config, pretrained_model=model_init)
+model = get_model(config, fine_tune=True)
+model_finetuned = get_model(config, fine_tune=True)
+
+model = model.load_from_checkpoint(best_model_path, config=config)
+model_finetuned = model_finetuned.load_from_checkpoint(best_model_finetuned_path, config=config)
 
 datamodule = get_datamodule(config)
 checkpoint_path = config.checkpoint_path 
@@ -48,3 +69,4 @@ trainer = pl.Trainer(logger=wandb_logger, accelerator="gpu", devices=[0], determ
 # %%
 # Run the test set
 trainer.test(model, datamodule=datamodule)
+trainer.test(model_finetuned, datamodule=datamodule)
