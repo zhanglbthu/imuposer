@@ -4,20 +4,23 @@ from imuposer import math
 from imuposer.config import Config, amass_combos
 
 class GlobalModelDataset(Dataset):
-    def __init__(self, split="train", config:Config=None):
+    def __init__(self, split="train", config:Config=None, combo_id=None):
         super().__init__()
 
         # load the data
         self.train = split
         self.config = config
-        self.data = self.load_data()
+        self.data = self.load_data(combo_id)
         
-    def load_data(self):
+    def load_data(self, combo_id=None):
         if self.train == "train":
             data_files = [x.name for x in self.config.processed_imu_poser_25fps.iterdir() if "dip" not in x.name]
         else:
             data_files = ["dip_test.pt"]
 
+        # print combos的组合数
+        print(f"Number of combos: {len(amass_combos)}")
+        
         imu = []
         pose = []
 
@@ -55,18 +58,31 @@ class GlobalModelDataset(Dataset):
 
                 window_length = self.config.max_sample_len * 25 // 60 # 300 * 25 // 60 = 125
 
-                for _combo in list(amass_combos):
-                    # acc N, 5, 3
-                    # ori N, 5, 3, 3
+                if combo_id == None:
+                    for _combo in list(amass_combos):
+                        # acc N, 5, 3
+                        # ori N, 5, 3, 3
+                        _combo_acc = torch.zeros_like(acc)
+                        _combo_ori = torch.zeros((3, 3)).repeat(ori.shape[0], 5, 1, 1)
+
+                        _combo_acc[:, amass_combos[_combo]] = acc[:, amass_combos[_combo]]
+                        _combo_ori[:, amass_combos[_combo]] = ori[:, amass_combos[_combo]]
+
+                        imu_inputs = torch.cat([_combo_acc.flatten(1), _combo_ori.flatten(1)], dim=1) # [N, 5 * 3 + 5 * 3 * 3]
+
+                        imu.extend(torch.split(imu_inputs, window_length))
+                        pose.extend(torch.split(fpose, window_length))
+                else:
+                    _combo = amass_combos[combo_id]
 
                     _combo_acc = torch.zeros_like(acc)
                     _combo_ori = torch.zeros((3, 3)).repeat(ori.shape[0], 5, 1, 1)
 
-                    _combo_acc[:, amass_combos[_combo]] = acc[:, amass_combos[_combo]]
-                    _combo_ori[:, amass_combos[_combo]] = ori[:, amass_combos[_combo]]
+                    _combo_acc[:, _combo] = acc[:, _combo]
+                    _combo_ori[:, _combo] = ori[:, _combo]
 
-                    imu_inputs = torch.cat([_combo_acc.flatten(1), _combo_ori.flatten(1)], dim=1) # [N, 5 * 3 + 5 * 3 * 3]
-
+                    imu_inputs = torch.cat([_combo_acc.flatten(1), _combo_ori.flatten(1)], dim=1)
+                    
                     imu.extend(torch.split(imu_inputs, window_length))
                     pose.extend(torch.split(fpose, window_length))
 

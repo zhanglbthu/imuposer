@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
 from imuposer.datasets import *
+from imuposer.config import amass_combos
 
 def train_val_split(dataset, train_pct):
     # get the train and val split
@@ -16,19 +17,21 @@ def train_val_split(dataset, train_pct):
     val_size = total_size - train_size
     return train_size, val_size
 
-def get_dataset(config=None, test_only=False):
+def get_dataset(config=None, test_only=False, combo_id=None):
     print("Getting dataset and test only is", test_only)
     model = config.model
     # load the dataset
     if model == "GlobalModelIMUPoser":
         if not test_only:
             train_dataset = GlobalModelDataset("train", config)
-        test_dataset = GlobalModelDataset("test", config)
+        # test_dataset = GlobalModelDataset("test", config)
+        test_dataset = GlobalModelDataset("test", config, combo_id)
     elif model == "GlobalModelIMUPoserFineTuneDIP":
         print("Fine tuning with DIP")
         if not test_only:
             train_dataset = GlobalModelDatasetFineTuneDIP("train", config)
-        test_dataset = GlobalModelDatasetFineTuneDIP("test", config)
+        # test_dataset = GlobalModelDatasetFineTuneDIP("test", config)
+        test_dataset = GlobalModelDatasetFineTuneDIP("test", config, combo_id)
     else:
         print("Enter a valid model")
         return
@@ -45,11 +48,11 @@ def get_dataset(config=None, test_only=False):
     else:
         return None, test_dataset, None
 
-def get_datamodule(config):
+def get_datamodule(config, combo_id=None):
     model = config.model
     # load the dataset
     if model in ["GlobalModelIMUPoser", "GlobalModelIMUPoserFineTuneDIP"]:
-        return IMUPoserDataModule(config)
+        return IMUPoserDataModule(config, combo_id)
     else:
         print("Enter a valid model")
 
@@ -65,12 +68,13 @@ def pad_seq(batch):
     return inputs, outputs, input_lens, output_lens
 
 class IMUPoserDataModule(pl.LightningDataModule):
-    def __init__(self, config):
+    def __init__(self, config, combo_id=None):
         super().__init__()
         self.config = config
+        self.combo_id = combo_id
 
     def setup(self, stage=None):
-        self.train_dataset, self.test_dataset, self.val_dataset = get_dataset(self.config, test_only=self.config.test_only)
+        self.train_dataset, self.test_dataset, self.val_dataset = get_dataset(self.config, test_only=self.config.test_only, combo_id=self.combo_id)
         print("Done with setup")
 
     def train_dataloader(self):

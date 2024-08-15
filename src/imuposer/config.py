@@ -1,6 +1,7 @@
 from pathlib import Path
 import torch
 import datetime
+import os
 
 class Config:
     def __init__(self, experiment=None, model=None, project_root_dir=None,
@@ -31,7 +32,11 @@ class Config:
         # set test options
         self.test_only = test_only
         self.checkpoint_path = checkpoint_path
-        print(f"checkpoint_path: {self.checkpoint_path}")
+        result_folder = checkpoint_path + "/results"
+        self.model_json = result_folder + "/model.json"
+        self.finetuned_model_json = result_folder + "/finetuned_model.json"
+
+        os.makedirs(result_folder, exist_ok=True)
 
         if device != None:
             if 'cpu' in device:
@@ -59,7 +64,7 @@ class Config:
 
         if self.mkdir:
             if self.experiment != None:
-                datestring = datetime.datetime.now().strftime("%m%d%Y-%H%M%S")
+                datestring = datetime.datetime.now().strftime("%m%d%Y")
                 self.checkpoint_path = self.data_dir / f"checkpoints/{self.experiment}-{datestring}"
                 self.checkpoint_path.mkdir(exist_ok=True, parents=True)
             else:
@@ -107,7 +112,7 @@ imuName2idx = {
 }
 
 amass_combos = {
-    'global': [0, 1, 2, 3, 4],
+    # 'global': [0, 1, 2, 3, 4],
     'lw_rw_h': [0, 1, 4],
     'rw_lp_rp': [1, 2, 3],
     'lw_rw_rp': [0, 1, 3],

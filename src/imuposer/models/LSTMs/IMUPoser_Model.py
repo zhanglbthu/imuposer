@@ -5,6 +5,7 @@ IMUPoser Model
 import torch.nn as nn
 import torch
 import pytorch_lightning as pl
+import json
 from .RNN import RNN
 from imuposer.models.loss_functions import *
 from imuposer.smpl.parametricModel import ParametricModel
@@ -31,6 +32,10 @@ class IMUPoserModel(pl.LightningModule):
         self.dip_model = RNN(n_input=n_input, n_output=n_output, n_hidden=512, bidirectional=True)
 
         self.config = config
+        
+        self.current_combo_id = None
+        self.finetuned = False
+        self.results = {"combos": []}
 
         if config.use_joint_loss:
             self.bodymodel = ParametricModel(config.og_smpl_model_path, device=config.device)
@@ -164,9 +169,21 @@ class IMUPoserModel(pl.LightningModule):
             count += ve.numel()
         avg_ve = ve_sum / count
         
-        self.log(f"test_jre", avg_jre, prog_bar=True, batch_size=self.batch_size)
-        self.log(f"test_jpe", avg_jpe, prog_bar=True, batch_size=self.batch_size)
-        self.log(f"test_ve", avg_ve, prog_bar=True, batch_size=self.batch_size)
+        # self.log(f"test_jre", avg_jre, prog_bar=True, batch_size=self.batch_size)
+        # self.log(f"test_jpe", avg_jpe, prog_bar=True, batch_size=self.batch_size)
+        # self.log(f"test_ve", avg_ve, prog_bar=True, batch_size=self.batch_size)
+        
+        # save the results
+        current_results = {
+                "combo_id": self.current_combo_id,
+                "results": {
+                    "jre": avg_jre.item(),
+                    "jpe": avg_jpe.item(),
+                    "ve": avg_ve.item()
+                }
+        }
+        
+        self.results['combos'].append(current_results)
 
     def epoch_end_callback(self, outputs, loop_type="train"):
         loss = []
@@ -176,6 +193,11 @@ class IMUPoserModel(pl.LightningModule):
         # agg the losses
         avg_loss = torch.mean(torch.Tensor(loss))
         self.log(f"{loop_type}_loss", avg_loss, prog_bar=True, batch_size=self.batch_size)
+
+    def on_test_end(self):
+        results_json_path = self.config.finetuned_model_json if self.finetuned else self.config.model_json
+        with open(results_json_path, "w") as f:
+            json.dump(self.results, f)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)

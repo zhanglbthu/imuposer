@@ -8,10 +8,6 @@ ckpt2 = torch.load('/root/autodl-tmp/imuposer/checkpoints/IMUPoserGlobalModel_gl
 # 提取 state_dict（模型的权重）
 state_dict1 = ckpt1['state_dict']
 state_dict2 = ckpt2['state_dict']
-
-# 打印两个 .ckpt 文件的 state_dict 的 keys
-# for name, param in state_dict1.items():
-#     print(f"Parameter: {name}, Shape: {param.shape}")
     
 new_state_dict = {}
 for name, param in state_dict2.items():
