@@ -155,8 +155,6 @@ class IMUPoserModel(pl.LightningModule):
             jpe_loss.append(output["jpe"])
             ve_loss.append(output["ve"])
             
-        # avg_loss = torch.mean(torch.Tensor(loss))
-        # self.log(f"test_jpe", avg_loss, prog_bar=True, batch_size=self.batch_size)
         avg_jre = torch.mean(torch.cat(jre_loss))
         avg_jpe = torch.mean(torch.cat(jpe_loss))
         
@@ -168,10 +166,6 @@ class IMUPoserModel(pl.LightningModule):
             ve_sum += ve.sum()
             count += ve.numel()
         avg_ve = ve_sum / count
-        
-        # self.log(f"test_jre", avg_jre, prog_bar=True, batch_size=self.batch_size)
-        # self.log(f"test_jpe", avg_jpe, prog_bar=True, batch_size=self.batch_size)
-        # self.log(f"test_ve", avg_ve, prog_bar=True, batch_size=self.batch_size)
         
         # save the results
         current_results = {

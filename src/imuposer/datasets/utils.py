@@ -57,10 +57,10 @@ def get_datamodule(config, combo_id=None):
         print("Enter a valid model")
 
 def pad_seq(batch):
-    inputs = [item[0] for item in batch]
-    outputs = [item[1] for item in batch]
+    inputs = [item[0] for item in batch] # [window_size, 60]
+    outputs = [item[1] for item in batch] # [window_size, 144]
     
-    input_lens = [item.shape[0] for item in inputs]
+    input_lens = [item.shape[0] for item in inputs] 
     output_lens = [item.shape[0] for item in outputs]
     
     inputs = nn.utils.rnn.pad_sequence(inputs, batch_first=True)

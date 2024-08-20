@@ -68,11 +68,13 @@ trainer = pl.Trainer(logger=wandb_logger, accelerator="gpu", devices=[0], determ
 
 # %%
 # Run the test set
-for combo_id in amass_combos.keys():
+combos = amass_combos
+combos = {'lw_rp_h': [0, 3, 4]}
+for combo_id in combos.keys():
     print(f"Running test for combo_id: {combo_id}")
     datamodule = get_datamodule(config, combo_id)
     model.current_combo_id = combo_id
     model_finetuned.current_combo_id = combo_id   
 
-    trainer.test(model, datamodule=datamodule)
+    # trainer.test(model, datamodule=datamodule)
     trainer.test(model_finetuned, datamodule=datamodule)
