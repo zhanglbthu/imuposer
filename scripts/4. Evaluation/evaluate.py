@@ -25,7 +25,7 @@ config = Config(experiment=f"{_experiment}_{combo_id}", model="GlobalModelIMUPos
                 project_root_dir="../../", joints_set=amass_combos[combo_id], normalize="no_translation",
                 r6d=True, loss_type="mse", use_joint_loss=True, device="0",
                 mkdir=False, checkpoint_path="/root/autodl-tmp/imuposer/checkpoints/IMUPoserGlobalModel_global-08102024-040836",
-                test_only=True, data_dir="/root/autodl-tmp/imuposer")
+                test_only=True, data_dir="/root/autodl-tmp/dataset")
 
 # modify batch size
 config.batch_size = 1
