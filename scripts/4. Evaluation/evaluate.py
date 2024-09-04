@@ -14,19 +14,19 @@ import sys
 # set the random seed
 seed_everything(42, workers=True)
 
-parser = get_parser()
-args = parser.parse_args()
-# amass_combos: glocal+24
-combo_id = args.combo_id
-_experiment = args.experiment
+# parser = get_parser()
+# args = parser.parse_args()
+# # amass_combos: glocal+24
+# combo_id = args.combo_id
+# _experiment = args.experiment
 
 # %%
-config = Config(experiment=f"{_experiment}_{combo_id}", model="GlobalModelIMUPoser",
-                project_root_dir="../../", joints_set=amass_combos[combo_id], normalize="no_translation",
+config = Config(experiment="global", model="GlobalModelIMUPoser",
+                project_root_dir="./", joints_set=amass_combos["h"], normalize="no_translation",
                 r6d=True, loss_type="mse", use_joint_loss=True, device="0",
-                mkdir=False, checkpoint_path="/root/autodl-tmp/imuposer/checkpoints/IMUPoserGlobalModel_global-08102024-040836",
-                test_only=True, data_dir="/root/autodl-tmp/dataset")
-
+                mkdir=False, checkpoint_name="IMUPoserGlobalModel_global-08102024-040836",
+                test_only=True)
+            
 # modify batch size
 config.batch_size = 1
 
@@ -68,13 +68,12 @@ trainer = pl.Trainer(logger=wandb_logger, accelerator="gpu", devices=[0], determ
 
 # %%
 # Run the test set
-combos = amass_combos
-combos = {'lw_rp_h': [0, 3, 4]}
-for combo_id in combos.keys():
+combos = list(amass_combos.keys())
+for combo_id in combos:
     print(f"Running test for combo_id: {combo_id}")
     datamodule = get_datamodule(config, combo_id)
     model.current_combo_id = combo_id
     model_finetuned.current_combo_id = combo_id   
-
+                                                                                                        
     # trainer.test(model, datamodule=datamodule)
     trainer.test(model_finetuned, datamodule=datamodule)

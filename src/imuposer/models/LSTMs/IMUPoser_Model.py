@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch
 import pytorch_lightning as pl
 import json
+import os
 from .RNN import RNN
 from imuposer.models.loss_functions import *
 from imuposer.smpl.parametricModel import ParametricModel
@@ -119,6 +120,8 @@ class IMUPoserModel(pl.LightningModule):
         _pred = self(imu_inputs, input_lengths)
         
         pred_pose = _pred[:, :, :self.n_pose_output]
+        self.pred_pose_results.append(r6d_to_rotation_matrix(pred_pose).view(-1, 216))
+        
         _target = target_pose
         target_pose = _target[:, :, :self.n_pose_output]
         
@@ -144,7 +147,12 @@ class IMUPoserModel(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         self.epoch_end_callback(outputs, loop_type="val")
-
+    
+    def on_test_start(self):
+        self.pred_pose_results = []
+        self.combo_folder = os.path.join(self.config.combo_result_folder, self.current_combo_id)
+        os.makedirs(self.combo_folder, exist_ok=True)
+    
     def test_epoch_end(self, outputs):
         # self.epoch_end_callback(outputs, loop_type="test")
         jre_loss = []
@@ -192,6 +200,10 @@ class IMUPoserModel(pl.LightningModule):
         results_json_path = self.config.finetuned_model_json if self.finetuned else self.config.model_json
         with open(results_json_path, "w") as f:
             json.dump(self.results, f)
+        
+        self.pred_pose_results = torch.cat(self.pred_pose_results, dim=0)
+        # save the results
+        torch.save(self.pred_pose_results, os.path.join(self.combo_folder, "pose.pt"))
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.lr)

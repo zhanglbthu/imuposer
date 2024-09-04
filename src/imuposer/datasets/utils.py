@@ -18,7 +18,6 @@ def train_val_split(dataset, train_pct):
     return train_size, val_size
 
 def get_dataset(config=None, test_only=False, combo_id=None):
-    print("Getting dataset and test only is", test_only)
     model = config.model
     # load the dataset
     if model == "GlobalModelIMUPoser":
@@ -75,7 +74,6 @@ class IMUPoserDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         self.train_dataset, self.test_dataset, self.val_dataset = get_dataset(self.config, test_only=self.config.test_only, combo_id=self.combo_id)
-        print("Done with setup")
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.config.batch_size, collate_fn=pad_seq, num_workers=8, shuffle=True)

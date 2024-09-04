@@ -17,9 +17,6 @@ class GlobalModelDataset(Dataset):
             data_files = [x.name for x in self.config.processed_imu_poser_25fps.iterdir() if "dip" not in x.name]
         else:
             data_files = ["dip_test.pt"]
-
-        # print combos的组合数
-        print(f"Number of combos: {len(amass_combos)}")
         
         imu = []
         pose = []

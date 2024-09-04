@@ -275,7 +275,8 @@ class ParametricModel:
         else:
             vo3d.vis_mesh(verts[0], faces)
 
-    def view_mesh(self, vertex_list: list, fps=60, distance_between_subjects=0.8):
+    def view_mesh(self, vertex_list: list, fps=60, distance_between_subjects=0.8,
+                  video_path=None):
         r"""
         View model mesh (single frame or a sequence).
 
@@ -302,11 +303,12 @@ class ParametricModel:
         verts = torch.cat(v_list, dim=1).cpu().numpy()
         faces = np.concatenate(f_list)
         if verts.shape[0] > 1:
-            vo3d.render_sequence_3d(verts, faces, 720, 720, 'a.avi', fps, visible=False)
+            vo3d.render_sequence_3d(verts, faces, 720, 720, video_path, fps, visible=True)
         else:
             vo3d.vis_mesh(verts[0], faces)
 
-    def view_motion(self, pose_list: list, tran_list: list = None, fps=60, distance_between_subjects=0.8):
+    def view_motion(self, pose_list: list, tran_list: list = None, fps=60, distance_between_subjects=0.8,
+                    video_path=None):
         r"""
         View model motion (poses and translations) (single frame or a sequence).
 
@@ -326,4 +328,4 @@ class ParametricModel:
             pose = pose_list[i].view(-1, len(self.parent), 3, 3)
             tran = tran_list[i].view(-1, 3) - tran_list[i].view(-1, 3)[:1] if tran_list else None
             verts.append(self.forward_kinematics(pose, tran=tran, calc_mesh=True)[2])
-        self.view_mesh(verts, fps, distance_between_subjects=distance_between_subjects)
+        self.view_mesh(verts, fps, distance_between_subjects=distance_between_subjects, video_path=video_path)
