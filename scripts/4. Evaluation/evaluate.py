@@ -22,9 +22,9 @@ seed_everything(42, workers=True)
 
 # %%
 config = Config(experiment="global", model="GlobalModelIMUPoser",
-                project_root_dir="./", joints_set=amass_combos["h"], normalize="no_translation",
+                project_root_dir="/root/autodl-tmp", joints_set=amass_combos["lw_rp_h"], normalize="no_translation",
                 r6d=True, loss_type="mse", use_joint_loss=True, device="0",
-                mkdir=False, checkpoint_name="IMUPoserGlobalModel_global-08102024-040836",
+                mkdir=False, checkpoint_name="IMUPoser_GlobalModel_lw_rp_h-01092025",
                 test_only=True)
             
 # modify batch size
@@ -35,29 +35,29 @@ config.batch_size = 1
 with open(os.path.join(config.checkpoint_path, "best_model.txt"), "r") as f:
     best_model_path = f.readline().strip()
     
-with open(os.path.join(config.checkpoint_path, "best_model_finetuned.txt"), "r") as f:
-    best_model_finetuned_path = f.readline().strip()
+# with open(os.path.join(config.checkpoint_path, "best_model_finetuned.txt"), "r") as f:
+#     best_model_finetuned_path = f.readline().strip()
 
-ckpt = torch.load(best_model_finetuned_path)
-state_dict = ckpt['state_dict']
-keys_to_modify = [key for key in state_dict.keys() if key.startswith('pretrained_model.')]
-if len(keys_to_modify) > 0:
-    for key in keys_to_modify:
-        new_key = key.replace("pretrained_model.", "")
-        state_dict[new_key] = state_dict.pop(key)
+# ckpt = torch.load(best_model_finetuned_path)
+# state_dict = ckpt['state_dict']
+# keys_to_modify = [key for key in state_dict.keys() if key.startswith('pretrained_model.')]
+# if len(keys_to_modify) > 0:
+#     for key in keys_to_modify:
+#         new_key = key.replace("pretrained_model.", "")
+#         state_dict[new_key] = state_dict.pop(key)
         
-    torch.save(ckpt, best_model_finetuned_path)
-else:
-    print("No keys to modify in the state_dict.")
+#     torch.save(ckpt, best_model_finetuned_path)
+# else:
+#     print("No keys to modify in the state_dict.")
 
 # %%
 # instantiate model and data
-model = get_model(config, fine_tune=True)
-model_finetuned = get_model(config, fine_tune=True)
+model = get_model(config, fine_tune=False)
+# model_finetuned = get_model(config, fine_tune=True)
 
 model = model.load_from_checkpoint(best_model_path, config=config)
-model_finetuned = model_finetuned.load_from_checkpoint(best_model_finetuned_path, config=config)
-model_finetuned.finetuned = True
+# model_finetuned = model_finetuned.load_from_checkpoint(best_model_finetuned_path, config=config)
+# model_finetuned.finetuned = True
 
 checkpoint_path = config.checkpoint_path 
 
@@ -69,11 +69,12 @@ trainer = pl.Trainer(logger=wandb_logger, accelerator="gpu", devices=[0], determ
 # %%
 # Run the test set
 combos = list(amass_combos.keys())
+combos = ["lw_rp_h"]
 for combo_id in combos:
     print(f"Running test for combo_id: {combo_id}")
     datamodule = get_datamodule(config, combo_id)
     model.current_combo_id = combo_id
-    model_finetuned.current_combo_id = combo_id   
+    # model_finetuned.current_combo_id = combo_id   
                                                                                                         
-    # trainer.test(model, datamodule=datamodule)
-    trainer.test(model_finetuned, datamodule=datamodule)
+    trainer.test(model, datamodule=datamodule)
+    # trainer.test(model_finetuned, datamodule=datamodule)
